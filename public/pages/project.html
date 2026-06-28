@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project — ApiForge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forge: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' },
+          },
+          fontFamily: { mono: ['JetBrains Mono', 'monospace'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #0f0f0f; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; }
+    .btn-primary { background: #f97316; color: white; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; transition: background 0.2s; cursor: pointer; border: none; }
+    .btn-primary:hover { background: #ea580c; }
+    .btn-ghost { background: transparent; color: #737373; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .btn-ghost:hover { border-color: #737373; color: #e5e5e5; }
+    .btn-danger { background: transparent; color: #f87171; border: 1px solid #450a0a; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .btn-danger:hover { background: #450a0a; }
+    .input { background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 14px; color: white; font-size: 13px; font-family: 'JetBrains Mono', monospace; width: 100%; outline: none; transition: border-color 0.2s; }
+    .input:focus { border-color: #f97316; }
+    .select { background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 14px; color: white; font-size: 13px; font-family: 'JetBrains Mono', monospace; width: 100%; outline: none; }
+    .tab-active { border-bottom: 2px solid #f97316; color: #f97316; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #737373; }
+    .method-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .badge-GET { background: #052e16; color: #4ade80; }
+    .badge-POST { background: #172554; color: #60a5fa; }
+    .badge-PUT { background: #1c1917; color: #fbbf24; }
+    .badge-DELETE { background: #450a0a; color: #f87171; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+    .code-box { background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; font-size: 12px; color: #a3e635; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- NAV -->
+  <nav class="border-b border-[#2a2a2a] px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0f0f0f] z-10">
+    <div class="flex items-center gap-3">
+      <a href="/pages/dashboard.html" class="text-forge-500 font-bold text-lg tracking-tight">Api<span class="text-white">Forge</span></a>
+      <span class="text-[#2a2a2a]">/</span>
+      <span id="nav-project-name" class="text-sm text-[#737373]"></span>
+    </div>
+    <button onclick="logout()" class="btn-ghost text-xs">Sign out</button>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-8">
+
+    <!-- PROJECT HEADER -->
+    <div class="card p-6 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-1">
+            <h1 id="project-title" class="text-xl font-bold"></h1>
+            <span id="auth-badge"></span>
+          </div>
+          <p id="project-base-url" class="text-xs text-[#404040] font-mono"></p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-[#737373]">API Key:</span>
+            <code id="project-api-key" class="text-xs text-forge-400 bg-[#0f0f0f] px-2 py-1 rounded border border-[#2a2a2a]"></code>
+            <button onclick="copyApiKey()" class="btn-ghost text-xs py-1 px-2">Copy</button>
+          </div>
+          <p class="text-[#404040] text-xs">Include as <code>x-api-key</code> header in all fetch calls (auth off mode)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-6 border-b border-[#2a2a2a] mb-8">
+      <button onclick="showTab('tables')" id="tab-tables" class="tab-active pb-3 text-sm font-semibold">Tables</button>
+      <button onclick="showTab('apis')" id="tab-apis" class="tab-inactive pb-3 text-sm font-semibold">APIs</button>
+      <button onclick="showTab('usage')" id="tab-usage" class="tab-inactive pb-3 text-sm font-semibold">How to use</button>
+    </div>
+
+    <!-- TABLES TAB -->
+    <div id="section-tables">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-semibold">Tables</h2>
+        <button onclick="openTableModal()" class="btn-primary">+ New table</button>
+      </div>
+      <div id="tables-list" class="space-y-3"></div>
+      <p id="tables-empty" class="text-[#404040] text-sm hidden">No tables yet. Create your first table.</p>
+    </div>
+
+    <!-- APIS TAB -->
+    <div id="section-apis" class="hidden">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-semibold">API Endpoints</h2>
+        <button onclick="openApiModal()" class="btn-primary">+ New API</button>
+      </div>
+      <div id="apis-list" class="space-y-3"></div>
+      <p id="apis-empty" class="text-[#404040] text-sm hidden">No APIs yet. Create your first API endpoint.</p>
+    </div>
+
+    <!-- USAGE TAB -->
+    <div id="section-usage" class="hidden">
+      <div class="space-y-6">
+        <div class="card p-6">
+          <h3 class="font-bold mb-3 text-forge-400">Fetch example (auth off)</h3>
+          <div class="code-box" id="usage-fetch-off"></div>
+        </div>
+        <div class="card p-6" id="usage-auth-section">
+          <h3 class="font-bold mb-3 text-forge-400">Fetch example (auth on)</h3>
+          <div class="code-box" id="usage-fetch-on"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE TABLE MODAL -->
+  <div id="modal-table" class="modal hidden">
+    <div class="card w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-lg font-bold mb-6">New table</h2>
+      <div class="space-y-5">
+        <div>
+          <label class="text-xs text-[#737373] block mb-1">Table name</label>
+          <input id="new-table-name" class="input" placeholder="blogs" />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs text-[#737373]">Columns</label>
+            <button onclick="addColumnRow()" class="text-xs text-forge-400 hover:text-forge-500">+ Add column</button>
+          </div>
+          <div id="columns-list" class="space-y-2"></div>
+          <p class="text-[#404040] text-xs mt-2">Note: <code>id</code> and <code>created_at</code> are added automatically.</p>
+        </div>
+        <div id="table-error" class="text-red-400 text-xs hidden"></div>
+        <div class="flex gap-3">
+          <button onclick="closeTableModal()" class="btn-ghost flex-1">Cancel</button>
+          <button onclick="createTable()" class="btn-primary flex-1">Create table</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE API MODAL -->
+  <div id="modal-api" class="modal hidden">
+    <div class="card w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-lg font-bold mb-6">New API endpoint</h2>
+      <div class="space-y-5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Method</label>
+            <select id="api-method" class="select" onchange="updateApiForm()">
+              <option>GET</option>
+              <option>POST</option>
+              <option>PUT</option>
+              <option>DELETE</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">API name</label>
+            <input id="api-name" class="input" placeholder="get-all-blogs" />
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-[#737373] block mb-1">Target table</label>
+          <select id="api-table" class="select" onchange="updateApiForm()">
+            <option value="">Select a table...</option>
+          </select>
+        </div>
+
+        <!-- WHERE condition (GET, PUT, DELETE) -->
+        <div id="where-section" class="space-y-3 p-4 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg">
+          <p class="text-xs text-[#737373] font-semibold">WHERE condition (optional)</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-[#737373] block mb-1">Filter by column</label>
+              <select id="api-where-col" class="select">
+                <option value="">None (return all rows)</option>
+                <option value=":token_user_id">:token_user_id (logged-in user)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-[#737373] block mb-1">Value comes from</label>
+              <select id="api-where-source" class="select">
+                <option value="query">Query string (?col=val)</option>
+                <option value="body">Request body</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSERT columns (POST) -->
+        <div id="insert-section" class="hidden space-y-2 p-4 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg">
+          <p class="text-xs text-[#737373] font-semibold mb-2">Columns to insert</p>
+          <div id="insert-checkboxes" class="space-y-2"></div>
+        </div>
+
+        <!-- UPDATE columns (PUT) -->
+        <div id="update-section" class="hidden space-y-2 p-4 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg">
+          <p class="text-xs text-[#737373] font-semibold mb-2">Columns to update</p>
+          <div id="update-checkboxes" class="space-y-2"></div>
+        </div>
+
+        <!-- requires_auth -->
+        <div class="flex items-center justify-between p-4 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg" id="auth-toggle-row">
+          <div>
+            <p class="text-sm font-semibold">Require login?</p>
+            <p class="text-[#737373] text-xs mt-0.5">Only logged-in users can call this API</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="api-requires-auth" class="sr-only peer">
+            <div class="w-11 h-6 bg-[#2a2a2a] peer-checked:bg-forge-500 rounded-full transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5"></div>
+          </label>
+        </div>
+
+        <div id="api-error" class="text-red-400 text-xs hidden"></div>
+        <div class="flex gap-3">
+          <button onclick="closeApiModal()" class="btn-ghost flex-1">Cancel</button>
+          <button onclick="createApi()" class="btn-primary flex-1">Create API</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+    let project = null;
+    let currentUser = null;
+    let tables = [];
+
+    async function boot() {
+      const meRes = await fetch('/auth/me', { credentials: 'include' });
+      if (!meRes.ok) { window.location.href = '/'; return; }
+      currentUser = (await meRes.json()).user;
+
+      const projRes = await fetch(`/projects/${projectId}`, { credentials: 'include' });
+      if (!projRes.ok) { window.location.href = '/pages/dashboard.html'; return; }
+      project = await projRes.json();
+
+      document.getElementById('nav-project-name').textContent = project.name;
+      document.getElementById('project-title').textContent = project.name;
+      document.getElementById('project-api-key').textContent = project.api_key;
+      document.getElementById('project-base-url').textContent =
+        `${window.location.origin}/api/${currentUser.username}/${project.name}/[api-name]`;
+
+      const authBadge = document.getElementById('auth-badge');
+      authBadge.innerHTML = project.auth_enabled
+        ? '<span class="text-xs bg-green-950 text-green-400 border border-green-900 px-2 py-0.5 rounded">auth on</span>'
+        : '<span class="text-xs bg-[#1a1a1a] text-[#737373] border border-[#2a2a2a] px-2 py-0.5 rounded">auth off</span>';
+
+      if (project.auth_enabled) {
+        document.getElementById('auth-toggle-row').classList.remove('hidden');
+      } else {
+        document.getElementById('auth-toggle-row').classList.add('hidden');
+      }
+
+      buildUsageExamples();
+      loadTables();
+      loadApis();
+    }
+
+    async function logout() {
+      await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    }
+
+    function copyApiKey() {
+      navigator.clipboard.writeText(project.api_key);
+    }
+
+    // ── Tabs ───────────────────────────────────────────────────────────────
+    function showTab(tab) {
+      ['tables', 'apis', 'usage'].forEach(t => {
+        document.getElementById(`section-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tab-${t}`).className =
+          t === tab ? 'tab-active pb-3 text-sm font-semibold' : 'tab-inactive pb-3 text-sm font-semibold';
+      });
+    }
+
+    // ── Tables ─────────────────────────────────────────────────────────────
+    async function loadTables() {
+      const res = await fetch(`/projects/${projectId}/tables`, { credentials: 'include' });
+      tables = await res.json();
+      const list = document.getElementById('tables-list');
+      const empty = document.getElementById('tables-empty');
+      list.innerHTML = '';
+
+      if (tables.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      tables.forEach(t => {
+        const cols = t.columns || [];
+        const colHtml = cols.map(c =>
+          `<span class="inline-block bg-[#0f0f0f] border border-[#2a2a2a] text-[#737373] text-xs px-2 py-0.5 rounded mr-1 mb-1">
+            ${c.column_name} <span class="text-[#404040]">${c.data_type}</span>
+          </span>`
+        ).join('');
+
+        const el = document.createElement('div');
+        el.className = 'card p-5';
+        el.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h3 class="font-semibold text-sm mb-2">${t.table_name}</h3>
+              <div class="flex flex-wrap">
+                <span class="inline-block bg-[#0a0a0a] border border-[#1a1a1a] text-forge-400 text-xs px-2 py-0.5 rounded mr-1 mb-1">id integer</span>
+                ${colHtml}
+                <span class="inline-block bg-[#0a0a0a] border border-[#1a1a1a] text-[#404040] text-xs px-2 py-0.5 rounded mr-1 mb-1">created_at timestamptz</span>
+              </div>
+            </div>
+            <button onclick="deleteTable(${t.id}, '${t.table_name}')" class="btn-danger ml-4">Delete</button>
+          </div>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    async function deleteTable(id, name) {
+      if (!confirm(`Delete table "${name}"? All data in it will be lost.`)) return;
+      await fetch(`/projects/${projectId}/tables/${id}`, { method: 'DELETE', credentials: 'include' });
+      loadTables();
+    }
+
+    // Table modal
+    function openTableModal() {
+      document.getElementById('modal-table').classList.remove('hidden');
+      document.getElementById('columns-list').innerHTML = '';
+      addColumnRow();
+      addColumnRow();
+    }
+    function closeTableModal() {
+      document.getElementById('modal-table').classList.add('hidden');
+      document.getElementById('new-table-name').value = '';
+      document.getElementById('table-error').classList.add('hidden');
+    }
+
+    function addColumnRow() {
+      const row = document.createElement('div');
+      row.className = 'flex gap-2 items-center';
+      row.innerHTML = `
+        <input class="input col-name" placeholder="column_name" style="flex:2" />
+        <select class="select col-type" style="flex:1">
+          <option value="text">text</option>
+          <option value="integer">integer</option>
+          <option value="boolean">boolean</option>
+          <option value="timestamptz">timestamptz</option>
+        </select>
+        <button onclick="this.parentElement.remove()" class="text-[#737373] hover:text-red-400 text-lg px-2">×</button>
+      `;
+      document.getElementById('columns-list').appendChild(row);
+    }
+
+    async function createTable() {
+      const table_name = document.getElementById('new-table-name').value.trim();
+      const errEl = document.getElementById('table-error');
+      errEl.classList.add('hidden');
+
+      const rows = document.querySelectorAll('#columns-list > div');
+      const columns = [];
+      for (const row of rows) {
+        const name = row.querySelector('.col-name').value.trim();
+        const type = row.querySelector('.col-type').value;
+        if (name) columns.push({ column_name: name, data_type: type });
+      }
+
+      if (!table_name) { errEl.textContent = 'Table name is required.'; errEl.classList.remove('hidden'); return; }
+      if (columns.length === 0) { errEl.textContent = 'At least one column is required.'; errEl.classList.remove('hidden'); return; }
+
+      const res = await fetch(`/projects/${projectId}/tables`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table_name, columns }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+      closeTableModal();
+      loadTables();
+    }
+
+    // ── APIs ───────────────────────────────────────────────────────────────
+    async function loadApis() {
+      const res = await fetch(`/projects/${projectId}/apis`, { credentials: 'include' });
+      const apis = await res.json();
+      const list = document.getElementById('apis-list');
+      const empty = document.getElementById('apis-empty');
+      list.innerHTML = '';
+
+      if (apis.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      const base = `${window.location.origin}/api/${currentUser.username}/${project.name}`;
+
+      apis.forEach(a => {
+        const el = document.createElement('div');
+        el.className = 'card p-5';
+        el.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="method-badge badge-${a.method}">${a.method}</span>
+                <code class="text-sm text-white">${base}/${a.api_name}</code>
+                ${a.requires_auth ? '<span class="text-xs bg-green-950 text-green-400 border border-green-900 px-2 py-0.5 rounded">auth required</span>' : ''}
+              </div>
+              <div class="text-xs text-[#737373] space-y-0.5">
+                <div>Table: <span class="text-[#a3a3a3]">${a.target_table}</span></div>
+                ${a.where_column ? `<div>WHERE: <span class="text-[#a3a3a3]">${a.where_column}</span> from <span class="text-[#a3a3a3]">${a.where_source}</span></div>` : ''}
+                ${a.insert_columns ? `<div>Insert: <span class="text-[#a3a3a3]">${a.insert_columns.join(', ')}</span></div>` : ''}
+                ${a.update_columns ? `<div>Update: <span class="text-[#a3a3a3]">${a.update_columns.join(', ')}</span></div>` : ''}
+              </div>
+              <div class="flex gap-4 mt-3 text-xs text-[#404040]">
+                <span>${a.total_calls || 0} calls</span>
+                ${a.last_called ? `<span>Last: ${new Date(a.last_called).toLocaleString()}</span>` : ''}
+                ${a.error_count > 0 ? `<span class="text-red-400">${a.error_count} errors</span>` : ''}
+              </div>
+            </div>
+            <button onclick="deleteApi(${a.id})" class="btn-danger ml-4">Delete</button>
+          </div>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    async function deleteApi(id) {
+      if (!confirm('Delete this API?')) return;
+      await fetch(`/projects/${projectId}/apis/${id}`, { method: 'DELETE', credentials: 'include' });
+      loadApis();
+    }
+
+    // API modal
+    function openApiModal() {
+      document.getElementById('modal-api').classList.remove('hidden');
+      // Populate table dropdown
+      const sel = document.getElementById('api-table');
+      sel.innerHTML = '<option value="">Select a table...</option>';
+      tables.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.table_name;
+        opt.textContent = t.table_name;
+        sel.appendChild(opt);
+      });
+      updateApiForm();
+    }
+
+    function closeApiModal() {
+      document.getElementById('modal-api').classList.add('hidden');
+      document.getElementById('api-error').classList.add('hidden');
+    }
+
+    function updateApiForm() {
+      const method = document.getElementById('api-method').value;
+      const tableName = document.getElementById('api-table').value;
+      const table = tables.find(t => t.table_name === tableName);
+      const cols = table ? (table.columns || []) : [];
+
+      document.getElementById('where-section').classList.toggle('hidden', method === 'POST');
+      document.getElementById('insert-section').classList.toggle('hidden', method !== 'POST');
+      document.getElementById('update-section').classList.toggle('hidden', method !== 'PUT');
+
+      // Populate WHERE column dropdown
+      const whereColSel = document.getElementById('api-where-col');
+      whereColSel.innerHTML = '<option value="">None (return all rows)</option><option value=":token_user_id">:token_user_id (logged-in user)</option>';
+      cols.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.column_name;
+        opt.textContent = c.column_name;
+        whereColSel.appendChild(opt);
+      });
+
+      // Populate insert/update checkboxes
+      ['insert', 'update'].forEach(type => {
+        const box = document.getElementById(`${type}-checkboxes`);
+        box.innerHTML = '';
+        cols.forEach(c => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center gap-2 text-sm cursor-pointer';
+          label.innerHTML = `
+            <input type="checkbox" class="${type}-col-check" value="${c.column_name}"
+              class="accent-orange-500" checked />
+            <span class="text-[#a3a3a3]">${c.column_name}</span>
+            <span class="text-[#404040] text-xs">${c.data_type}</span>
+          `;
+          box.appendChild(label);
+        });
+      });
+    }
+
+    async function createApi() {
+      const method = document.getElementById('api-method').value;
+      const api_name = document.getElementById('api-name').value.trim();
+      const target_table = document.getElementById('api-table').value;
+      const where_column = document.getElementById('api-where-col').value || null;
+      const where_source = document.getElementById('api-where-source').value;
+      const requires_auth = document.getElementById('api-requires-auth').checked;
+      const errEl = document.getElementById('api-error');
+      errEl.classList.add('hidden');
+
+      const insert_columns = method === 'POST'
+        ? [...document.querySelectorAll('.insert-col-check:checked')].map(el => el.value)
+        : null;
+      const update_columns = method === 'PUT'
+        ? [...document.querySelectorAll('.update-col-check:checked')].map(el => el.value)
+        : null;
+
+      if (!api_name) { errEl.textContent = 'API name is required.'; errEl.classList.remove('hidden'); return; }
+      if (!target_table) { errEl.textContent = 'Select a target table.'; errEl.classList.remove('hidden'); return; }
+
+      const res = await fetch(`/projects/${projectId}/apis`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_name, method, target_table, where_column, where_source, insert_columns, update_columns, requires_auth }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+      closeApiModal();
+      loadApis();
+    }
+
+    // ── Usage Examples ─────────────────────────────────────────────────────
+    function buildUsageExamples() {
+      const base = `${window.location.origin}/api/${currentUser.username}/${project.name}`;
+
+      document.getElementById('usage-fetch-off').textContent =
+`// GET all items (auth off — include API key)
+const res = await fetch('${base}/your-api-name', {
+  headers: { 'x-api-key': '${project.api_key}' }
+});
+const data = await res.json();
+
+// POST new item
+await fetch('${base}/your-api-name', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': '${project.api_key}'
+  },
+  body: JSON.stringify({ column1: 'value1', column2: 'value2' })
+});`;
+
+      document.getElementById('usage-fetch-on').textContent =
+`// Register
+await fetch('${base}/register', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'user@example.com', password: 'secret' })
+});
+
+// Login (sets HttpOnly cookie automatically)
+await fetch('${base}/login', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'user@example.com', password: 'secret' })
+});
+
+// Call a protected API (cookie sent automatically)
+const res = await fetch('${base}/your-protected-api', {
+  credentials: 'include'
+});
+const data = await res.json();`;
+
+      if (!project.auth_enabled) {
+        document.getElementById('usage-auth-section').classList.add('hidden');
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

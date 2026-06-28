@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApiForge — Build backends without code</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forge: {
+              50:  '#fff7ed',
+              100: '#ffedd5',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              900: '#7c2d12',
+            },
+            dark: '#0f0f0f',
+            surface: '#1a1a1a',
+            border: '#2a2a2a',
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #0f0f0f; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; }
+    .glow { box-shadow: 0 0 30px rgba(249,115,22,0.15); }
+    .tab-active { border-bottom: 2px solid #f97316; color: #f97316; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #737373; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- NAV -->
+  <nav class="border-b border-[#2a2a2a] px-6 py-4 flex items-center justify-between">
+    <span class="text-forge-500 font-bold text-xl tracking-tight">Api<span class="text-white">Forge</span></span>
+    <span class="text-[#737373] text-sm">Build backends without code</span>
+  </nav>
+
+  <!-- HERO -->
+  <main class="flex-1 flex flex-col items-center justify-center px-4 py-16">
+    <div class="mb-10 text-center">
+      <div class="inline-block bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-1 text-forge-500 text-xs mb-6 font-mono">
+        v1.0 — CSE216 Project
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+        Your backend,<br/><span class="text-forge-500">forged in clicks.</span>
+      </h1>
+      <p class="text-[#737373] text-sm md:text-base max-w-md mx-auto leading-relaxed">
+        Create projects, define tables, configure APIs — then call them from any HTML file using <code class="text-forge-400">fetch()</code>. No Node.js. No servers. Just your frontend.
+      </p>
+    </div>
+
+    <!-- AUTH CARD -->
+    <div class="w-full max-w-md bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-8 glow">
+      <!-- Tabs -->
+      <div class="flex mb-8 gap-6">
+        <button onclick="showTab('login')" id="tab-login"
+          class="tab-active pb-2 text-sm font-semibold transition-all">
+          Sign in
+        </button>
+        <button onclick="showTab('register')" id="tab-register"
+          class="tab-inactive pb-2 text-sm font-semibold transition-all">
+          Create account
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="form-login">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Email</label>
+            <input id="login-email" type="email" placeholder="you@example.com"
+              class="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#404040] focus:outline-none focus:border-forge-500 transition-colors" />
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Password</label>
+            <input id="login-password" type="password" placeholder="••••••••"
+              class="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#404040] focus:outline-none focus:border-forge-500 transition-colors" />
+          </div>
+          <div id="login-error" class="text-red-400 text-xs hidden"></div>
+          <button onclick="handleLogin()"
+            class="w-full bg-forge-500 hover:bg-forge-600 text-white font-semibold py-3 rounded-lg text-sm transition-colors mt-2">
+            Sign in →
+          </button>
+        </div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="form-register" class="hidden">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Username</label>
+            <input id="reg-username" type="text" placeholder="sifat"
+              class="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#404040] focus:outline-none focus:border-forge-500 transition-colors" />
+            <p class="text-[#404040] text-xs mt-1">Letters, digits, underscores only. Used in your API URLs.</p>
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Email</label>
+            <input id="reg-email" type="email" placeholder="you@example.com"
+              class="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#404040] focus:outline-none focus:border-forge-500 transition-colors" />
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Password</label>
+            <input id="reg-password" type="password" placeholder="Min 6 characters"
+              class="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#404040] focus:outline-none focus:border-forge-500 transition-colors" />
+          </div>
+          <div id="reg-error" class="text-red-400 text-xs hidden"></div>
+          <button onclick="handleRegister()"
+            class="w-full bg-forge-500 hover:bg-forge-600 text-white font-semibold py-3 rounded-lg text-sm transition-colors mt-2">
+            Create account →
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Redirect if already logged in
+    fetch('/auth/me', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => { if (data.user) window.location.href = '/pages/dashboard.html'; })
+      .catch(() => {});
+
+    function showTab(tab) {
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+      document.getElementById('tab-login').className = tab === 'login' ? 'tab-active pb-2 text-sm font-semibold transition-all' : 'tab-inactive pb-2 text-sm font-semibold transition-all';
+      document.getElementById('tab-register').className = tab === 'register' ? 'tab-active pb-2 text-sm font-semibold transition-all' : 'tab-inactive pb-2 text-sm font-semibold transition-all';
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+      errEl.classList.add('hidden');
+
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error;
+        errEl.classList.remove('hidden');
+        return;
+      }
+      window.location.href = '/pages/dashboard.html';
+    }
+
+    async function handleRegister() {
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const errEl = document.getElementById('reg-error');
+      errEl.classList.add('hidden');
+
+      const res = await fetch('/auth/register', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.error;
+        errEl.classList.remove('hidden');
+        return;
+      }
+      window.location.href = '/pages/dashboard.html';
+    }
+
+    // Allow Enter key on inputs
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const loginVisible = !document.getElementById('form-login').classList.contains('hidden');
+        if (loginVisible) handleLogin(); else handleRegister();
+      }
+    });
+  </script>
+</body>
+</html>

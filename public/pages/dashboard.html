@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — ApiForge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forge: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' },
+          },
+          fontFamily: { mono: ['JetBrains Mono', 'monospace'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #0f0f0f; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; }
+    .btn-primary { background: #f97316; color: white; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; transition: background 0.2s; cursor: pointer; }
+    .btn-primary:hover { background: #ea580c; }
+    .btn-ghost { background: transparent; color: #737373; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .btn-ghost:hover { border-color: #737373; color: #e5e5e5; }
+    .input { background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 14px; color: white; font-size: 13px; font-family: 'JetBrains Mono', monospace; width: 100%; outline: none; transition: border-color 0.2s; }
+    .input:focus { border-color: #f97316; }
+    .badge-get { background: #052e16; color: #4ade80; }
+    .badge-post { background: #172554; color: #60a5fa; }
+    .badge-put { background: #1c1917; color: #fbbf24; }
+    .badge-delete { background: #450a0a; color: #f87171; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- NAV -->
+  <nav class="border-b border-[#2a2a2a] px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0f0f0f] z-10">
+    <a href="/pages/dashboard.html" class="text-forge-500 font-bold text-lg tracking-tight">Api<span class="text-white">Forge</span></a>
+    <div class="flex items-center gap-4">
+      <span id="nav-username" class="text-[#737373] text-sm"></span>
+      <button onclick="logout()" class="btn-ghost text-xs">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-10">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">Projects</h1>
+        <p class="text-[#737373] text-sm mt-1">Each project gets its own database schema and API namespace.</p>
+      </div>
+      <button onclick="openCreateModal()" class="btn-primary">+ New project</button>
+    </div>
+
+    <!-- PROJECTS GRID -->
+    <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="text-[#404040] text-sm col-span-2" id="projects-empty" style="display:none">
+        No projects yet. Create your first project to get started.
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE PROJECT MODAL -->
+  <div id="modal-create" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden px-4">
+    <div class="card w-full max-w-md p-8">
+      <h2 class="text-lg font-bold mb-6">New project</h2>
+      <div class="space-y-5">
+        <div>
+          <label class="text-xs text-[#737373] block mb-1">Project name</label>
+          <input id="new-project-name" class="input" placeholder="myblog" />
+          <p class="text-[#404040] text-xs mt-1">Used in your API URL: /api/{username}/<span class="text-forge-400">name</span>/...</p>
+        </div>
+
+        <div class="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-lg border border-[#2a2a2a]">
+          <div>
+            <p class="text-sm font-semibold">Enable built-in auth</p>
+            <p class="text-[#737373] text-xs mt-1">Adds /register and /login APIs automatically</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="new-auth-enabled" class="sr-only peer" onchange="toggleAuthConfig()">
+            <div class="w-11 h-6 bg-[#2a2a2a] peer-checked:bg-forge-500 rounded-full transition-colors peer-focus:outline-none"></div>
+            <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5"></div>
+          </label>
+        </div>
+
+        <div id="auth-config" class="hidden space-y-3 p-4 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg">
+          <p class="text-xs text-[#737373] mb-2">Specify which table and columns hold user credentials. You can set this after creating tables too.</p>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Auth table name</label>
+            <input id="new-auth-table" class="input" placeholder="users" />
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Email column</label>
+            <input id="new-auth-email-col" class="input" placeholder="email" />
+          </div>
+          <div>
+            <label class="text-xs text-[#737373] block mb-1">Password column</label>
+            <input id="new-auth-password-col" class="input" placeholder="password" />
+          </div>
+        </div>
+
+        <div id="auth-warning" class="hidden p-3 bg-yellow-950 border border-yellow-800 rounded-lg text-yellow-400 text-xs">
+          ⚠️ Auth is disabled. Your APIs will be accessible to anyone with your API key. Do not store sensitive private data without handling authentication yourself.
+        </div>
+
+        <div id="create-error" class="text-red-400 text-xs hidden"></div>
+
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeCreateModal()" class="btn-ghost flex-1">Cancel</button>
+          <button onclick="createProject()" class="btn-primary flex-1">Create project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    // ── Boot ──────────────────────────────────────────────────────────────
+    async function boot() {
+      const res = await fetch('/auth/me', { credentials: 'include' });
+      if (!res.ok) { window.location.href = '/'; return; }
+      const data = await res.json();
+      currentUser = data.user;
+      document.getElementById('nav-username').textContent = currentUser.username;
+      loadProjects();
+    }
+
+    async function logout() {
+      await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    }
+
+    // ── Projects ──────────────────────────────────────────────────────────
+    async function loadProjects() {
+      const res = await fetch('/projects', { credentials: 'include' });
+      const projects = await res.json();
+      const grid = document.getElementById('projects-grid');
+      const empty = document.getElementById('projects-empty');
+
+      grid.innerHTML = '';
+      if (projects.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      projects.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card p-6 hover:border-[#3a3a3a] transition-colors cursor-pointer group';
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-base group-hover:text-forge-400 transition-colors">${p.name}</h3>
+              <p class="text-[#404040] text-xs mt-1 font-mono">/api/${currentUser.username}/${p.name}/...</p>
+            </div>
+            <div class="flex items-center gap-2">
+              ${p.auth_enabled
+                ? '<span class="text-xs bg-green-950 text-green-400 border border-green-900 px-2 py-0.5 rounded">auth on</span>'
+                : '<span class="text-xs bg-[#1a1a1a] text-[#737373] border border-[#2a2a2a] px-2 py-0.5 rounded">auth off</span>'
+              }
+            </div>
+          </div>
+          <div class="flex gap-4 text-xs text-[#737373] mb-5">
+            <span>${p.table_count} table${p.table_count != 1 ? 's' : ''}</span>
+            <span>${p.api_count} API${p.api_count != 1 ? 's' : ''}</span>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="event.stopPropagation(); window.location.href='/pages/project.html?id=${p.id}'"
+              class="btn-primary text-xs py-1.5 px-3">Open →</button>
+            <button onclick="event.stopPropagation(); deleteProject(${p.id}, '${p.name}')"
+              class="btn-ghost text-xs py-1.5 px-3 hover:border-red-900 hover:text-red-400">Delete</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function deleteProject(id, name) {
+      if (!confirm(`Delete project "${name}"? This will permanently drop all its tables and data.`)) return;
+      const res = await fetch(`/projects/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) loadProjects();
+      else {
+        const d = await res.json();
+        alert(d.error);
+      }
+    }
+
+    // ── Create Modal ──────────────────────────────────────────────────────
+    function openCreateModal() {
+      document.getElementById('modal-create').classList.remove('hidden');
+      document.getElementById('new-project-name').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('modal-create').classList.add('hidden');
+      document.getElementById('create-error').classList.add('hidden');
+      document.getElementById('new-project-name').value = '';
+      document.getElementById('new-auth-enabled').checked = false;
+      toggleAuthConfig();
+    }
+
+    function toggleAuthConfig() {
+      const enabled = document.getElementById('new-auth-enabled').checked;
+      document.getElementById('auth-config').classList.toggle('hidden', !enabled);
+      document.getElementById('auth-warning').classList.toggle('hidden', enabled);
+      if (!enabled) document.getElementById('auth-warning').classList.remove('hidden');
+      else document.getElementById('auth-warning').classList.add('hidden');
+    }
+
+    // Show warning by default (auth off by default)
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('auth-warning').classList.remove('hidden');
+    });
+
+    async function createProject() {
+      const name = document.getElementById('new-project-name').value.trim();
+      const auth_enabled = document.getElementById('new-auth-enabled').checked;
+      const errEl = document.getElementById('create-error');
+      errEl.classList.add('hidden');
+
+      if (!name) { errEl.textContent = 'Project name is required.'; errEl.classList.remove('hidden'); return; }
+
+      const body = {
+        name,
+        auth_enabled,
+        auth_table: document.getElementById('new-auth-table').value.trim() || null,
+        auth_email_column: document.getElementById('new-auth-email-col').value.trim() || null,
+        auth_password_column: document.getElementById('new-auth-password-col').value.trim() || null,
+      };
+
+      const res = await fetch('/projects', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+
+      closeCreateModal();
+      loadProjects();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
