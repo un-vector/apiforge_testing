@@ -31,6 +31,15 @@
     .badge-post { background: #172554; color: #60a5fa; }
     .badge-put { background: #1c1917; color: #fbbf24; }
     .badge-delete { background: #450a0a; color: #f87171; }
+
+    /* ── Skeleton loader ── */
+    @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+    .skeleton {
+      background: linear-gradient(90deg, #1a1a1a 25%, #242424 37%, #1a1a1a 63%);
+      background-size: 800px 100%;
+      animation: shimmer 1.6s linear infinite;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -135,13 +144,48 @@
     }
 
     // ── Projects ──────────────────────────────────────────────────────────
+    function renderSkeletonCards(count = 4) {
+      const grid = document.getElementById('projects-grid');
+      const empty = document.getElementById('projects-empty');
+      empty.style.display = 'none';
+
+      grid.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+
+      for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'card skeleton-card p-6';
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-2/3">
+              <div class="skeleton h-4 w-32 mb-2"></div>
+              <div class="skeleton h-3 w-40"></div>
+            </div>
+            <div class="skeleton h-5 w-16 rounded"></div>
+          </div>
+          <div class="flex gap-4 mb-5">
+            <div class="skeleton h-3 w-14"></div>
+            <div class="skeleton h-3 w-14"></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="skeleton h-7 w-20 rounded-lg"></div>
+            <div class="skeleton h-7 w-16 rounded-lg"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
     async function loadProjects() {
-      const res = await fetch('/projects', { credentials: 'include' });
-      const projects = await res.json();
       const grid = document.getElementById('projects-grid');
       const empty = document.getElementById('projects-empty');
 
-      grid.innerHTML = '';
+      renderSkeletonCards();
+
+      const res = await fetch('/projects', { credentials: 'include' });
+      const projects = await res.json();
+
+      grid.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+
       if (projects.length === 0) {
         empty.style.display = 'block';
         return;
